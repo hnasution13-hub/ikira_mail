@@ -3,12 +3,28 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 from django.core.paginator import Paginator
-from django.utils import timezone
 from django.db.models import Q
 from .models import Email, Attachment, Contact
 from .forms import ComposeEmailForm, ContactForm
 from .utils.send import send_email_via_smtp
 import traceback
+
+FOLDER_TABS = [
+    ('inbox', 'Inbox'),
+    ('sent', 'Terkirim'),
+    ('drafts', 'Draft'),
+    ('trash', 'Trash'),
+]
+
+def base_context(user):
+    """Context yang dibutuhkan base.html di semua halaman"""
+    return {
+        'unread_count': Email.objects.filter(
+            recipients__icontains=user.email,
+            folder='inbox',
+            is_read=False
+        ).count()
+    }
 
 @login_required
 def inbox(request):
@@ -29,31 +45,25 @@ def inbox(request):
     paginator = Paginator(emails, 20)
     page_obj = paginator.get_page(request.GET.get('page', 1))
 
-    unread_count = Email.objects.filter(
-        recipients__icontains=request.user.email,
-        folder='inbox',
-        is_read=False
-    ).count()
-
-    return render(request, 'mail/inbox.html', {
+    ctx = base_context(request.user)
+    ctx.update({
         'page_obj': page_obj,
         'folder': folder,
-        'unread_count': unread_count,
         'search_query': search_query,
+        'folder_tabs': FOLDER_TABS,
     })
+    return render(request, 'mail/inbox.html', ctx)
 
 @login_required
 def compose(request):
     if request.method == 'POST':
-        print(f"[COMPOSE] POST data keys: {list(request.POST.keys())}")
-        print(f"[COMPOSE] FILES keys: {list(request.FILES.keys())}")
+        print(f"[COMPOSE] POST keys: {list(request.POST.keys())}")
         try:
             form = ComposeEmailForm(request.POST, request.FILES)
-            print(f"[COMPOSE] Form valid: {form.is_valid()}")
             if not form.is_valid():
                 print(f"[COMPOSE] Form errors: {form.errors}")
-
-            if form.is_valid():
+                messages.error(request, f'Form tidak valid: {form.errors}')
+            else:
                 email = Email.objects.create(
                     sender=request.user,
                     recipients=form.cleaned_data['recipients'],
@@ -65,25 +75,26 @@ def compose(request):
                     folder='outbox'
                 )
 
-                for f in request.FILES.getlist('attachments'):
-                    Attachment.objects.create(
-                        email=email,
-                        file=f,
-                        filename=f.name,
-                        content_type=f.content_type,
-                        size=f.size
-                    )
+                attachments = form.cleaned_data.get('attachments') or []
+                if not isinstance(attachments, list):
+                    attachments = [attachments]
+                for f in attachments:
+                    if f:
+                        Attachment.objects.create(
+                            email=email,
+                            file=f,
+                            filename=f.name,
+                            content_type=f.content_type,
+                            size=f.size
+                        )
 
                 success = send_email_via_smtp(email)
-
                 if success:
                     messages.success(request, 'Email berhasil dikirim!')
                 else:
                     messages.warning(request, 'Email disimpan, tapi gagal dikirim. Coba lagi nanti.')
 
                 return redirect('mail:inbox')
-            else:
-                messages.error(request, f'Form tidak valid: {form.errors}')
 
         except Exception as e:
             print(f"[COMPOSE ERROR] {str(e)}")
@@ -117,11 +128,12 @@ def compose(request):
 
         form = ComposeEmailForm(initial=initial)
 
-    contacts = Contact.objects.filter(user=request.user)
-    return render(request, 'mail/compose.html', {
+    ctx = base_context(request.user)
+    ctx.update({
         'form': form,
-        'contacts': contacts,
+        'contacts': Contact.objects.filter(user=request.user),
     })
+    return render(request, 'mail/compose.html', ctx)
 
 @login_required
 def view_email(request, email_id):
@@ -129,7 +141,9 @@ def view_email(request, email_id):
     if not email.is_read and request.user.email in email.recipients:
         email.is_read = True
         email.save(update_fields=['is_read'])
-    return render(request, 'mail/view_email.html', {'email': email})
+    ctx = base_context(request.user)
+    ctx['email'] = email
+    return render(request, 'mail/view_email.html', ctx)
 
 @login_required
 def delete_email(request, email_id):
@@ -165,10 +179,12 @@ def contacts(request):
     else:
         form = ContactForm()
 
-    return render(request, 'mail/contacts.html', {
+    ctx = base_context(request.user)
+    ctx.update({
         'contacts': Contact.objects.filter(user=request.user),
         'form': form,
     })
+    return render(request, 'mail/contacts.html', ctx)
 
 @login_required
 def delete_contact(request, contact_id):

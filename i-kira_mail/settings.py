@@ -138,25 +138,28 @@ ACCOUNT_EMAIL_VERIFICATION = 'none'
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_SESSION_REMEMBER = True
 
-# Email - Mailtrap via Anymail
+# Email Backend - dikontrol penuh via environment variable
+# Set EMAIL_BACKEND di Render:
+#   Gmail SMTP : django.core.mail.backends.smtp.EmailBackend
+#   Mailtrap   : anymail.backends.mailtrap.EmailBackend
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='i-kira Mail <noreply@i-kira.com>')
+
+# SMTP settings (Gmail atau SMTP lain)
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+
+# Mailtrap (opsional, hanya jika pakai Mailtrap)
 ANYMAIL = {
     'MAILTRAP_API_TOKEN': config('MAILTRAP_API_TOKEN', default=''),
 }
-EMAIL_BACKEND = config('EMAIL_BACKEND', default='anymail.backends.mailtrap.EmailBackend')
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='i-kira Mail <noreply@i-kira.com>')
 
 # IMAP
 IMAP_SERVER = config('IMAP_SERVER', default='imap.gmail.com')
 IMAP_PORT = config('IMAP_PORT', default=993, cast=int)
-
-# Fallback SMTP jika Mailtrap tidak dikonfigurasi
-if not config('MAILTRAP_API_TOKEN', default=''):
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
-    EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
-    EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
-    EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
-    EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 
 # Security - production only
 if not DEBUG:
