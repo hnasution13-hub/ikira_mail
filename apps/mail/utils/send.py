@@ -32,10 +32,19 @@ def send_email_via_smtp(email_obj):
 
         for attachment in email_obj.attachments.all():
             try:
-                attachment.file.open('rb')
-                content = attachment.file.read()
-                attachment.file.close()
+                try:
+                    # Coba baca langsung (local storage)
+                    attachment.file.open('rb')
+                    content = attachment.file.read()
+                    attachment.file.close()
+                except Exception:
+                    # Fallback: baca via URL (Cloudinary storage)
+                    import urllib.request
+                    url = attachment.file.url
+                    with urllib.request.urlopen(url) as response:
+                        content = response.read()
                 msg.attach(attachment.filename, content, attachment.content_type)
+                print(f"[MAIL] Attached: {attachment.filename}")
             except Exception as att_err:
                 print(f"[MAIL] Skip attachment {attachment.filename}: {att_err}")
 
