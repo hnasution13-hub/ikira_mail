@@ -31,10 +31,17 @@ def inbox(request):
     folder = request.GET.get('folder', 'inbox')
     search_query = request.GET.get('q', '')
 
-    emails = Email.objects.filter(
-        recipients__icontains=request.user.email,
-        folder=folder
-    )
+    # Sent folder: filter by sender. Semua folder lain: filter by recipients
+    if folder == 'sent':
+        emails = Email.objects.filter(
+            sender=request.user,
+            folder=folder
+        )
+    else:
+        emails = Email.objects.filter(
+            recipients__icontains=request.user.email,
+            folder=folder
+        )
     if search_query:
         emails = emails.filter(
             Q(subject__icontains=search_query) |
