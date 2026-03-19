@@ -34,6 +34,8 @@ services:
         sync: false
       - key: MAILTRAP_API_TOKEN
         sync: false
+      - key: RESEND_API_KEY
+        sync: false
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY

@@ -245,7 +245,10 @@ def delete_contact(request, contact_id):
 
 @login_required
 def debug_connection(request):
-    """Debug view - test SMTP connection. Hapus setelah testing."""
+    """Debug view - test SMTP connection. Superuser only."""
+    if not request.user.is_superuser:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("403 Forbidden: Superuser only.")
     import smtplib
     import socket
     from django.conf import settings
