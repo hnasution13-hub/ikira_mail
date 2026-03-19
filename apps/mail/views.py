@@ -55,7 +55,8 @@ def inbox(request):
 @login_required
 def compose(request):
     if request.method == 'POST':
-        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        # Treat semua POST ke compose sebagai AJAX - selalu return JSON
+        is_ajax = True
         try:
             form = ComposeEmailForm(request.POST, request.FILES)
             if not form.is_valid():
@@ -63,6 +64,7 @@ def compose(request):
                     return JsonResponse({'status': 'error', 'message': str(form.errors), 'type': 'ValidationError'}, status=400)
                 for field, errors in form.errors.items():
                     messages.error(request, f"{field}: {', '.join(errors)}")
+                form = ComposeEmailForm(initial=request.POST)
             else:
                 email = Email.objects.create(
                     sender=request.user,
