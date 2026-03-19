@@ -18,10 +18,22 @@ services:
         value: false
       - key: DATABASE_URL
         sync: false
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
+      - key: EMAIL_BACKEND
+        sync: false
+      - key: EMAIL_HOST
+        value: smtp.gmail.com
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_USE_TLS
+        value: "True"
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
       - key: MAILTRAP_API_TOKEN
         sync: false
-      - key: DEFAULT_FROM_EMAIL
-        value: "i-kira Mail <noreply@i-kira.com>"
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY
