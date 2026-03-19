@@ -1,72 +1,98 @@
 {% extends 'base.html' %}
-
-{% block title %}Kontak - i-karis Mail{% endblock %}
+{% block title %}Kontak — i-kira Mail{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-        <h2>📇 Buku Kontak</h2>
-        <button onclick="showAddForm()" class="btn btn-primary">+ Tambah Kontak</button>
-    </div>
-    
-    <!-- Form tambah kontak (hidden by default) -->
-    <div id="addForm" style="display: none; margin-bottom: 2rem; padding: 1rem; border: 1px solid #ddd; border-radius: 4px;">
-        <h3 style="margin-bottom: 1rem;">Tambah Kontak Baru</h3>
-        <form method="post">
-            {% csrf_token %}
-            {% for field in form %}
-            <div class="form-group">
-                <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
-                {{ field }}
-            </div>
-            {% endfor %}
-            <div style="display: flex; gap: 1rem;">
-                <button type="submit" class="btn btn-primary">Simpan</button>
-                <button type="button" onclick="hideAddForm()" class="btn" style="background-color: #6c757d; color: white;">Batal</button>
-            </div>
-        </form>
-    </div>
-    
-    <!-- Daftar kontak -->
-    {% if contacts %}
-    <table style="width: 100%; border-collapse: collapse;">
-        <thead>
-            <tr style="background-color: #f8f9fa;">
-                <th style="padding: 0.75rem; text-align: left;">Nama</th>
-                <th style="padding: 0.75rem; text-align: left;">Email</th>
-                <th style="padding: 0.75rem; text-align: left;">Perusahaan</th>
-                <th style="padding: 0.75rem; text-align: left;">Telepon</th>
-                <th style="padding: 0.75rem; text-align: left;">Aksi</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for contact in contacts %}
-            <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 0.75rem;">{{ contact.name }}</td>
-                <td style="padding: 0.75rem;">{{ contact.email }}</td>
-                <td style="padding: 0.75rem;">{{ contact.company|default:"-" }}</td>
-                <td style="padding: 0.75rem;">{{ contact.phone|default:"-" }}</td>
-                <td style="padding: 0.75rem;">
-                    <a href="{% url 'mail:compose' %}?to={{ contact.email }}" class="btn btn-sm btn-primary">📧</a>
-                    <a href="{% url 'mail:delete_contact' contact.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Hapus kontak ini?')">🗑️</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <p style="text-align: center; color: #666; padding: 3rem;">Belum ada kontak. Tambahkan kontak baru!</p>
-    {% endif %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+  <div>
+    <h1 style="font-family:'Bebas Neue';font-size:1.8rem;letter-spacing:1px;">KONTAK</h1>
+    <p style="font-size:.82rem;color:var(--muted);margin-top:2px;">{{ contacts|length }} kontak tersimpan</p>
+  </div>
+  <button onclick="toggleForm()" id="toggleBtn" class="btn btn-primary">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Tambah Kontak
+  </button>
 </div>
 
-<script>
-function showAddForm() {
-    document.getElementById('addForm').style.display = 'block';
-    window.scrollTo(0, document.getElementById('addForm').offsetTop);
-}
+<!-- Add Form -->
+<div id="addForm" style="display:none;margin-bottom:1.5rem;">
+  <div class="card">
+    <h3 style="font-size:.9rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:1.2rem;">Kontak Baru</h3>
+    <form method="post">
+      {% csrf_token %}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="form-group">
+          <label class="form-label">Nama</label>
+          <input type="text" name="name" class="form-input" placeholder="Nama lengkap" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" name="email" class="form-input" placeholder="email@perusahaan.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Perusahaan</label>
+          <input type="text" name="company" class="form-input" placeholder="Nama perusahaan">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Telepon</label>
+          <input type="text" name="phone" class="form-input" placeholder="08xx-xxxx-xxxx">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Catatan</label>
+        <textarea name="notes" class="form-textarea" style="min-height:80px;" placeholder="Catatan opsional..."></textarea>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button type="submit" class="btn btn-primary">Simpan</button>
+        <button type="button" onclick="toggleForm()" class="btn btn-ghost">Batal</button>
+      </div>
+    </form>
+  </div>
+</div>
 
-function hideAddForm() {
-    document.getElementById('addForm').style.display = 'none';
+<!-- Contact List -->
+{% if contacts %}
+<div class="card" style="padding:0;overflow:hidden;">
+  <!-- Header -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:16px;padding:10px 20px;border-bottom:1px solid var(--border);background:var(--bg3);">
+    <span style="font-size:.72rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted2);">Nama</span>
+    <span style="font-size:.72rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted2);">Email</span>
+    <span style="font-size:.72rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted2);">Perusahaan</span>
+    <span style="font-size:.72rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted2);">Telepon</span>
+    <span style="font-size:.72rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted2);">Aksi</span>
+  </div>
+  {% for contact in contacts %}
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:16px;align-items:center;padding:12px 20px;border-bottom:1px solid var(--border);transition:background .15s;"
+       onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background='transparent'">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:30px;height:30px;border-radius:7px;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.76rem;color:var(--muted);flex-shrink:0;">{{ contact.name|first|upper }}</div>
+      <span style="font-size:.85rem;font-weight:500;">{{ contact.name }}</span>
+    </div>
+    <span style="font-size:.82rem;color:var(--muted);">{{ contact.email }}</span>
+    <span style="font-size:.82rem;color:var(--muted);">{{ contact.company|default:"—" }}</span>
+    <span style="font-size:.82rem;color:var(--muted);">{{ contact.phone|default:"—" }}</span>
+    <div style="display:flex;gap:6px;">
+      <a href="{% url 'mail:compose' %}?to={{ contact.email }}" class="btn btn-ghost btn-sm" title="Kirim email">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </a>
+      <a href="{% url 'mail:delete_contact' contact.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Hapus kontak ini?')" title="Hapus">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+      </a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:4rem;color:var(--muted);">
+  <div style="font-size:2.5rem;margin-bottom:12px;opacity:.3;">👤</div>
+  <p style="font-size:.9rem;">Belum ada kontak. Tambahkan kontak baru!</p>
+</div>
+{% endif %}
+
+<script>
+function toggleForm() {
+  const f = document.getElementById('addForm');
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
 }
+{% if form.errors %}document.getElementById('addForm').style.display='block';{% endif %}
 </script>
 {% endblock %}

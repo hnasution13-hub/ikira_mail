@@ -1,90 +1,101 @@
 {% extends 'base.html' %}
-
-{% block title %}Inbox - i-karis Mail{% endblock %}
+{% block title %}Inbox — i-kira Mail{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <h2>📥 Inbox ({{ unread_count }} belum dibaca)</h2>
-        <div>
-            <form method="get" style="display: inline-block; margin-right: 1rem;">
-                <input type="text" name="q" placeholder="Cari email..." value="{{ search_query }}" class="form-control" style="width: 250px; display: inline-block;">
-                <button type="submit" class="btn btn-primary btn-sm">Cari</button>
-            </form>
-            <a href="{% url 'mail:compose' %}" class="btn btn-primary">✏️ Tulis Email</a>
-        </div>
-    </div>
-    
-    <!-- Folder tabs -->
-    <div style="display: flex; gap: 1rem; margin-bottom: 1rem; border-bottom: 1px solid #ddd; padding-bottom: 0.5rem;">
-        <a href="?folder=inbox" style="text-decoration: none; {% if folder == 'inbox' %}font-weight: bold; color: #1a237e; border-bottom: 2px solid #1a237e;{% endif %}">Inbox</a>
-        <a href="?folder=sent" style="text-decoration: none; {% if folder == 'sent' %}font-weight: bold; color: #1a237e; border-bottom: 2px solid #1a237e;{% endif %}">Terkirim</a>
-        <a href="?folder=drafts" style="text-decoration: none; {% if folder == 'drafts' %}font-weight: bold; color: #1a237e; border-bottom: 2px solid #1a237e;{% endif %}">Draft</a>
-        <a href="?folder=trash" style="text-decoration: none; {% if folder == 'trash' %}font-weight: bold; color: #1a237e; border-bottom: 2px solid #1a237e;{% endif %}">Trash</a>
-    </div>
-    
-    {% if page_obj %}
-    <div class="email-list">
-        {% for email in page_obj %}
-        <div class="email-item {% if not email.is_read %}unread{% endif %}" onclick="window.location.href='{% url 'mail:view_email' email.id %}'">
-            <div class="email-sender">
-                {% if folder == 'sent' %}
-                    Kepada: {{ email.recipients|truncatechars:30 }}
-                {% else %}
-                    {{ email.sender.email|truncatechars:30 }}
-                {% endif %}
-            </div>
-            <div class="email-subject">
-                <span class="star {% if email.is_starred %}active{% else %}inactive{% endif %}" 
-                      onclick="event.stopPropagation(); toggleStar({{ email.id }})">⭐</span>
-                {{ email.subject|truncatechars:50 }}
-                {% if email.attachments.exists %} 📎{% endif %}
-            </div>
-            <div class="email-date">
-                {{ email.created_at|date:"d M Y H:i" }}
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    
-    <!-- Pagination -->
-    {% if page_obj.has_other_pages %}
-    <div style="margin-top: 2rem; text-align: center;">
-        <div style="display: inline-flex; gap: 0.5rem;">
-            {% if page_obj.has_previous %}
-                <a href="?page=1{% if folder %}&folder={{ folder }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="btn btn-sm btn-primary">First</a>
-                <a href="?page={{ page_obj.previous_page_number }}{% if folder %}&folder={{ folder }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="btn btn-sm btn-primary">Previous</a>
-            {% endif %}
-            
-            <span style="padding: 0.5rem;">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-            
-            {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}{% if folder %}&folder={{ folder }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="btn btn-sm btn-primary">Next</a>
-                <a href="?page={{ page_obj.paginator.num_pages }}{% if folder %}&folder={{ folder }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="btn btn-sm btn-primary">Last</a>
-            {% endif %}
-        </div>
-    </div>
-    {% endif %}
-    
-    {% else %}
-    <p style="text-align: center; color: #666; padding: 3rem;">Tidak ada email di folder ini.</p>
-    {% endif %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+  <div>
+    <h1 style="font-family:'Bebas Neue';font-size:1.8rem;letter-spacing:1px;">INBOX</h1>
+    <p style="font-size:.82rem;color:var(--muted);margin-top:2px;">
+      {% if unread_count %}{{ unread_count }} belum dibaca{% else %}Semua sudah dibaca{% endif %}
+    </p>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <form method="get" style="display:flex;gap:8px;">
+      <input type="hidden" name="folder" value="{{ folder }}">
+      <input type="text" name="q" value="{{ search_query }}" placeholder="Cari email..." class="form-input" style="width:220px;padding:8px 12px;">
+      <button type="submit" class="btn btn-ghost btn-sm">Cari</button>
+    </form>
+    <a href="{% url 'mail:compose' %}" class="btn btn-primary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Tulis Email
+    </a>
+  </div>
 </div>
 
+<!-- Folder Tabs -->
+<div style="display:flex;gap:4px;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:0;">
+  {% for tab_folder, tab_label in folder_tabs %}
+  <a href="?folder={{ tab_folder }}" style="padding:8px 16px;font-size:.83rem;font-weight:600;text-decoration:none;border-bottom:2px solid {% if folder == tab_folder %}var(--red){% else %}transparent{% endif %};color:{% if folder == tab_folder %}var(--text){% else %}var(--muted){% endif %};transition:all .15s;margin-bottom:-1px;">
+    {{ tab_label }}
+  </a>
+  {% empty %}
+  <a href="?folder=inbox" style="padding:8px 16px;font-size:.83rem;font-weight:600;text-decoration:none;border-bottom:2px solid {% if folder == 'inbox' %}var(--red){% else %}transparent{% endif %};color:{% if folder == 'inbox' %}var(--text){% else %}var(--muted){% endif %};margin-bottom:-1px;">Inbox</a>
+  <a href="?folder=sent" style="padding:8px 16px;font-size:.83rem;font-weight:600;text-decoration:none;border-bottom:2px solid {% if folder == 'sent' %}var(--red){% else %}transparent{% endif %};color:{% if folder == 'sent' %}var(--text){% else %}var(--muted){% endif %};margin-bottom:-1px;">Terkirim</a>
+  <a href="?folder=drafts" style="padding:8px 16px;font-size:.83rem;font-weight:600;text-decoration:none;border-bottom:2px solid {% if folder == 'drafts' %}var(--red){% else %}transparent{% endif %};color:{% if folder == 'drafts' %}var(--text){% else %}var(--muted){% endif %};margin-bottom:-1px;">Draft</a>
+  <a href="?folder=trash" style="padding:8px 16px;font-size:.83rem;font-weight:600;text-decoration:none;border-bottom:2px solid {% if folder == 'trash' %}var(--red){% else %}transparent{% endif %};color:{% if folder == 'trash' %}var(--text){% else %}var(--muted){% endif %};margin-bottom:-1px;">Trash</a>
+  {% endfor %}
+</div>
+
+<!-- Email List -->
+<div class="card" style="padding:0;overflow:hidden;">
+  {% if page_obj %}
+    {% for email in page_obj %}
+    <div onclick="window.location.href='{% url 'mail:view_email' email.id %}'"
+         style="display:grid;grid-template-columns:auto 1fr auto auto;gap:16px;align-items:center;padding:14px 20px;border-bottom:1px solid var(--border);cursor:pointer;background:{% if not email.is_read %}var(--surface){% else %}transparent{% endif %};transition:background .15s;"
+         onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='{% if not email.is_read %}var(--surface){% else %}transparent{% endif %}'">
+      <!-- Avatar -->
+      <div style="width:36px;height:36px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.82rem;color:var(--muted);flex-shrink:0;">
+        {{ email.sender.email|first|upper }}
+      </div>
+      <!-- Content -->
+      <div style="min-width:0;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
+          <span style="font-size:.84rem;font-weight:{% if not email.is_read %}600{% else %}400{% endif %};color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;">
+            {% if folder == 'sent' %}{{ email.recipients|truncatechars:28 }}{% else %}{{ email.sender.email|truncatechars:28 }}{% endif %}
+          </span>
+          {% if not email.is_read %}<span style="width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0;"></span>{% endif %}
+        </div>
+        <div style="font-size:.83rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+          <span style="color:{% if not email.is_read %}var(--text){% else %}var(--muted){% endif %};font-weight:{% if not email.is_read %}500{% else %}400{% endif %};">{{ email.subject|truncatechars:40 }}</span>
+          {% if email.attachments.exists %} · <span style="color:var(--muted2);">📎</span>{% endif %}
+        </div>
+      </div>
+      <!-- Star -->
+      <span onclick="event.stopPropagation();toggleStar({{ email.id }},this)"
+            id="star-{{ email.id }}"
+            style="font-size:1rem;cursor:pointer;opacity:{% if email.is_starred %}1{% else %}.25{% endif %};transition:opacity .15s;">⭐</span>
+      <!-- Date -->
+      <div style="font-size:.75rem;color:var(--muted);white-space:nowrap;text-align:right;">
+        {{ email.created_at|date:"d M" }}<br>
+        <span style="color:var(--muted2);">{{ email.created_at|date:"H:i" }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+  <div style="text-align:center;padding:4rem;color:var(--muted);">
+    <div style="font-size:2.5rem;margin-bottom:12px;opacity:.3;">✉</div>
+    <p style="font-size:.9rem;">Tidak ada email di folder ini.</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<div style="display:flex;justify-content:center;gap:8px;margin-top:1.5rem;">
+  {% if page_obj.has_previous %}
+  <a href="?page={{ page_obj.previous_page_number }}&folder={{ folder }}{% if search_query %}&q={{ search_query }}{% endif %}" class="btn btn-ghost btn-sm">← Prev</a>
+  {% endif %}
+  <span style="padding:5px 12px;font-size:.82rem;color:var(--muted);">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+  <a href="?page={{ page_obj.next_page_number }}&folder={{ folder }}{% if search_query %}&q={{ search_query }}{% endif %}" class="btn btn-ghost btn-sm">Next →</a>
+  {% endif %}
+</div>
+{% endif %}
+
 <script>
-function toggleStar(emailId) {
-    fetch(`/email/${emailId}/star/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': '{{ csrf_token }}',
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        // Refresh halaman atau update UI
-        location.reload();
-    });
+function toggleStar(id, el) {
+  fetch(`/email/${id}/star/`, {method:'POST',headers:{'X-CSRFToken':'{{ csrf_token }}','X-Requested-With':'XMLHttpRequest'}})
+  .then(r=>r.json()).then(d=>{ el.style.opacity = d.starred ? '1' : '.25'; });
 }
 </script>
 {% endblock %}

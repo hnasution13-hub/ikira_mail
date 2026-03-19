@@ -1,47 +1,70 @@
 {% extends 'base.html' %}
-
-{% block title %}{{ email.subject }} - i-karis Mail{% endblock %}
+{% block title %}{{ email.subject }} — i-kira Mail{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
-        <a href="{% url 'mail:inbox' %}" class="btn btn-sm" style="background-color: #6c757d; color: white;">← Kembali ke Inbox</a>
-        <div>
-            <a href="{% url 'mail:compose' %}?reply_to={{ email.id }}" class="btn btn-sm btn-primary">↩️ Balas</a>
-            <a href="{% url 'mail:compose' %}?forward={{ email.id }}" class="btn btn-sm btn-primary">↪️ Forward</a>
-            <a href="{% url 'mail:delete_email' email.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Hapus email ini?')">🗑️ Hapus</a>
+<div style="max-width:760px;margin:0 auto;">
+  <!-- Actions bar -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+    <a href="{% url 'mail:inbox' %}" class="btn btn-ghost btn-sm">← Kembali</a>
+    <div style="display:flex;gap:8px;">
+      <a href="{% url 'mail:compose' %}?reply_to={{ email.id }}" class="btn btn-ghost btn-sm">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 00-4-4H4"/></svg>
+        Balas
+      </a>
+      <a href="{% url 'mail:compose' %}?forward={{ email.id }}" class="btn btn-ghost btn-sm">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 014-4h12"/></svg>
+        Forward
+      </a>
+      <a href="{% url 'mail:delete_email' email.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Hapus email ini?')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        Hapus
+      </a>
+    </div>
+  </div>
+
+  <div class="card">
+    <!-- Subject -->
+    <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:1.2rem;line-height:1.4;">{{ email.subject }}</h2>
+
+    <!-- Meta -->
+    <div style="display:flex;align-items:center;gap:14px;padding-bottom:1.2rem;border-bottom:1px solid var(--border);margin-bottom:1.5rem;">
+      <div style="width:42px;height:42px;border-radius:10px;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;color:var(--muted);flex-shrink:0;">
+        {{ email.sender.email|first|upper }}
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:.88rem;font-weight:600;color:var(--text);">{{ email.sender.email }}</div>
+        <div style="font-size:.76rem;color:var(--muted);margin-top:2px;">
+          Kepada: {{ email.recipients }}
+          {% if email.cc %} · CC: {{ email.cc }}{% endif %}
         </div>
+      </div>
+      <div style="font-size:.76rem;color:var(--muted);text-align:right;flex-shrink:0;">
+        {{ email.created_at|date:"d M Y" }}<br>{{ email.created_at|date:"H:i" }}
+      </div>
     </div>
-    
-    <div style="border-bottom: 1px solid #eee; padding-bottom: 1rem; margin-bottom: 1.5rem;">
-        <h2 style="margin-bottom: 1rem;">{{ email.subject }}</h2>
-        
-        <div style="display: flex; gap: 2rem; color: #666;">
-            <div><strong>Dari:</strong> {{ email.sender.email }}</div>
-            <div><strong>Kepada:</strong> {{ email.recipients }}</div>
-            {% if email.cc %}
-            <div><strong>CC:</strong> {{ email.cc }}</div>
-            {% endif %}
-            <div><strong>Tanggal:</strong> {{ email.created_at|date:"d M Y H:i" }}</div>
-        </div>
-    </div>
-    
-    <div style="min-height: 300px; line-height: 1.8; margin-bottom: 2rem;">
-        {{ email.body_text|linebreaks }}
-    </div>
-    
+
+    <!-- Body -->
+    <div style="font-size:.9rem;line-height:1.85;color:var(--text);min-height:200px;white-space:pre-wrap;">{{ email.body_text }}</div>
+
+    <!-- Attachments -->
     {% if email.attachments.exists %}
-    <div style="border-top: 1px solid #eee; padding-top: 1rem;">
-        <h4 style="margin-bottom: 1rem;">📎 Lampiran ({{ email.attachments.count }})</h4>
-        <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
-            {% for attachment in email.attachments.all %}
-            <div style="border: 1px solid #ddd; border-radius: 4px; padding: 0.5rem;">
-                <a href="{{ attachment.file.url }}" target="_blank">{{ attachment.filename }}</a>
-                <small style="color: #666; display: block;">{{ attachment.size|filesizeformat }}</small>
-            </div>
-            {% endfor %}
-        </div>
+    <div style="margin-top:1.5rem;padding-top:1.2rem;border-top:1px solid var(--border);">
+      <p style="font-size:.75rem;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Lampiran ({{ email.attachments.count }})</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        {% for att in email.attachments.all %}
+        <a href="{{ att.file.url }}" target="_blank"
+           style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--surface);border:1px solid var(--border2);border-radius:7px;text-decoration:none;color:var(--text);font-size:.82rem;transition:border-color .15s;"
+           onmouseover="this.style.borderColor='var(--red)'" onmouseout="this.style.borderColor='var(--border2)'">
+          <span style="opacity:.5;">📎</span>
+          <div>
+            <div style="font-weight:500;">{{ att.filename }}</div>
+            <div style="font-size:.7rem;color:var(--muted);">{{ att.size|filesizeformat }}</div>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
     </div>
     {% endif %}
+  </div>
 </div>
 {% endblock %}
