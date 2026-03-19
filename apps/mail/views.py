@@ -84,30 +84,43 @@ def compose(request):
                     folder='outbox'
                 )
 
-                attachments = form.cleaned_data.get('attachments') or []
-                print(f"[COMPOSE] Attachments from form: {len(attachments)}")
-                # Cek juga FILES langsung sebagai fallback
-                if not attachments:
-                    attachments = request.FILES.getlist('attachments')
-                    print(f"[COMPOSE] Attachments from FILES: {len(attachments)}")
-                for f in attachments:
+                # Baca attachment ke memory dulu sebelum kirim
+                # Ini menghindari masalah baca file dari Cloudinary saat kirim
+                attachment_data = []
+                raw_attachments = request.FILES.getlist('attachments')
+                for f in raw_attachments:
                     if f and hasattr(f, 'name'):
                         try:
+                            f.seek(0)
+                            content_bytes = f.read()
+                            f.seek(0)
                             ct = getattr(f, 'content_type', None) or 'application/octet-stream'
-                            sz = getattr(f, 'size', 0) or f.seek(0, 2) or f.tell()
-                            f.seek(0) if hasattr(f, 'seek') else None
-                            Attachment.objects.create(
-                                email=email,
-                                file=f,
-                                filename=f.name,
-                                content_type=ct,
-                                size=sz
-                            )
-                            print(f"[COMPOSE] Attachment saved: {f.name}")
+                            attachment_data.append({
+                                'file': f,
+                                'filename': f.name,
+                                'content_type': ct,
+                                'size': f.size,
+                                'content': content_bytes,
+                            })
                         except Exception as att_err:
-                            print(f"[COMPOSE] Error attachment {f.name}: {att_err}")
+                            print(f"[COMPOSE] Error read attachment {f.name}: {att_err}")
 
-                success = send_email_via_smtp(email)
+                # Simpan ke DB/Cloudinary
+                for att in attachment_data:
+                    try:
+                        att['file'].seek(0)
+                        Attachment.objects.create(
+                            email=email,
+                            file=att['file'],
+                            filename=att['filename'],
+                            content_type=att['content_type'],
+                            size=att['size'],
+                        )
+                    except Exception as att_err:
+                        print(f"[COMPOSE] Error save attachment {att['filename']}: {att_err}")
+
+                # Kirim email dengan attachment dari memory
+                success = send_email_via_smtp(email, attachment_data=attachment_data)
 
                 if is_ajax:
                     if success:
