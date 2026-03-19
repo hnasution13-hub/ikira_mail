@@ -11,6 +11,5 @@ urlpatterns = [
     path('email/<int:email_id>/star/', views.toggle_star, name='toggle_star'),
     path('contacts/', views.contacts, name='contacts'),
     path('contacts/<int:contact_id>/delete/', views.delete_contact, name='delete_contact'),
-    # DEBUG - hapus setelah testing selesai
     path('debug-connection/', views.debug_connection, name='debug_connection'),
 ]

@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.core.paginator import Paginator
 from django.db.models import Q
 from .models import Email, Attachment, Contact
@@ -17,13 +17,13 @@ FOLDER_TABS = [
 ]
 
 def base_context(user):
-    """Context yang dibutuhkan base.html di semua halaman"""
     return {
         'unread_count': Email.objects.filter(
             recipients__icontains=user.email,
             folder='inbox',
             is_read=False
-        ).count()
+        ).count(),
+        'folder_tabs': FOLDER_TABS,
     }
 
 @login_required
@@ -35,7 +35,6 @@ def inbox(request):
         recipients__icontains=request.user.email,
         folder=folder
     )
-
     if search_query:
         emails = emails.filter(
             Q(subject__icontains=search_query) |
@@ -50,19 +49,20 @@ def inbox(request):
         'page_obj': page_obj,
         'folder': folder,
         'search_query': search_query,
-        'folder_tabs': FOLDER_TABS,
     })
     return render(request, 'mail/inbox.html', ctx)
 
 @login_required
 def compose(request):
     if request.method == 'POST':
-        print(f"[COMPOSE] POST keys: {list(request.POST.keys())}")
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         try:
             form = ComposeEmailForm(request.POST, request.FILES)
             if not form.is_valid():
-                print(f"[COMPOSE] Form errors: {form.errors}")
-                messages.error(request, f'Form tidak valid: {form.errors}')
+                if is_ajax:
+                    return JsonResponse({'status': 'error', 'message': str(form.errors), 'type': 'ValidationError'}, status=400)
+                for field, errors in form.errors.items():
+                    messages.error(request, f"{field}: {', '.join(errors)}")
             else:
                 email = Email.objects.create(
                     sender=request.user,
@@ -76,44 +76,43 @@ def compose(request):
                 )
 
                 attachments = form.cleaned_data.get('attachments') or []
-                if not isinstance(attachments, list):
-                    attachments = [attachments]
                 for f in attachments:
-                    if f:
-                        Attachment.objects.create(
-                            email=email,
-                            file=f,
-                            filename=f.name,
-                            content_type=f.content_type,
-                            size=f.size
-                        )
+                    if f and hasattr(f, 'name'):
+                        try:
+                            Attachment.objects.create(
+                                email=email,
+                                file=f,
+                                filename=f.name,
+                                content_type=f.content_type,
+                                size=f.size
+                            )
+                        except Exception as att_err:
+                            print(f"[COMPOSE] Error attachment {f.name}: {att_err}")
 
                 success = send_email_via_smtp(email)
 
-                is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
                 if is_ajax:
                     if success:
                         return JsonResponse({'status': 'ok', 'redirect': '/'})
                     else:
-                        return JsonResponse({'status': 'error', 'message': 'Email disimpan tapi gagal dikirim.'})
+                        return JsonResponse({'status': 'error', 'message': 'Email disimpan tapi gagal dikirim.', 'type': 'SMTPError'})
 
                 if success:
                     messages.success(request, 'Email berhasil dikirim!')
                 else:
                     messages.warning(request, 'Email disimpan, tapi gagal dikirim. Coba lagi nanti.')
-
                 return redirect('mail:inbox')
 
         except Exception as e:
+            tb = traceback.format_exc()
             print(f"[COMPOSE ERROR] {str(e)}")
-            print(traceback.format_exc())
-            is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+            print(tb)
             if is_ajax:
                 return JsonResponse({
                     'status': 'error',
                     'message': str(e),
-                    'traceback': traceback.format_exc(),
-                    'type': type(e).__name__
+                    'type': type(e).__name__,
+                    'traceback': tb
                 }, status=500)
             messages.error(request, f'Error: {str(e)}')
 
@@ -141,6 +140,10 @@ def compose(request):
                 }
             except Email.DoesNotExist:
                 pass
+
+        to_email = request.GET.get('to')
+        if to_email:
+            initial['recipients'] = to_email
 
         form = ComposeEmailForm(initial=initial)
 
@@ -209,31 +212,26 @@ def delete_contact(request, contact_id):
     messages.success(request, 'Kontak dihapus.')
     return redirect('mail:contacts')
 
-
 @login_required
 def debug_connection(request):
-    """
-    Debug view untuk test koneksi SMTP dan setting email.
-    HAPUS setelah testing selesai.
-    """
+    """Debug view - test SMTP connection. Hapus setelah testing."""
     import smtplib
     import socket
     from django.conf import settings
+    from django.core.mail import send_mail
 
     results = {}
 
-    # 1. Cek settings
     results['settings'] = {
         'EMAIL_BACKEND': settings.EMAIL_BACKEND,
         'EMAIL_HOST': getattr(settings, 'EMAIL_HOST', 'NOT SET'),
         'EMAIL_PORT': getattr(settings, 'EMAIL_PORT', 'NOT SET'),
         'EMAIL_USE_TLS': getattr(settings, 'EMAIL_USE_TLS', 'NOT SET'),
         'EMAIL_HOST_USER': getattr(settings, 'EMAIL_HOST_USER', 'NOT SET'),
-        'EMAIL_HOST_PASSWORD': '***' if getattr(settings, 'EMAIL_HOST_PASSWORD', '') else 'NOT SET',
+        'EMAIL_HOST_PASSWORD': '***SET***' if getattr(settings, 'EMAIL_HOST_PASSWORD', '') else 'NOT SET',
         'DEFAULT_FROM_EMAIL': settings.DEFAULT_FROM_EMAIL,
     }
 
-    # 2. Test DNS resolve
     try:
         host = getattr(settings, 'EMAIL_HOST', 'smtp.gmail.com')
         ip = socket.gethostbyname(host)
@@ -241,7 +239,6 @@ def debug_connection(request):
     except Exception as e:
         results['dns'] = {'status': 'FAILED', 'error': str(e)}
 
-    # 3. Test TCP connection ke SMTP port
     try:
         host = getattr(settings, 'EMAIL_HOST', 'smtp.gmail.com')
         port = getattr(settings, 'EMAIL_PORT', 587)
@@ -251,13 +248,11 @@ def debug_connection(request):
     except Exception as e:
         results['tcp'] = {'status': 'FAILED', 'error': str(e)}
 
-    # 4. Test SMTP login
     try:
         host = getattr(settings, 'EMAIL_HOST', 'smtp.gmail.com')
         port = getattr(settings, 'EMAIL_PORT', 587)
         user = getattr(settings, 'EMAIL_HOST_USER', '')
         password = getattr(settings, 'EMAIL_HOST_PASSWORD', '')
-
         smtp = smtplib.SMTP(host, port, timeout=10)
         smtp.ehlo()
         smtp.starttls()
@@ -268,12 +263,10 @@ def debug_connection(request):
     except Exception as e:
         results['smtp_login'] = {'status': 'FAILED', 'error': str(e)}
 
-    # 5. Test kirim email via Django
     try:
-        from django.core.mail import send_mail
         send_mail(
-            subject='[DEBUG] Test koneksi i-kira Mail',
-            message='Ini email test dari debug_connection view.',
+            subject='[DEBUG] Test i-kira Mail',
+            message='Test koneksi dari debug_connection.',
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[request.user.email],
             fail_silently=False,
@@ -282,17 +275,14 @@ def debug_connection(request):
     except Exception as e:
         results['send_test'] = {'status': 'FAILED', 'error': str(e), 'traceback': traceback.format_exc()}
 
-    # Render hasil sebagai HTML
     html = '<html><body style="font-family:monospace;background:#111;color:#eee;padding:2rem;">'
-    html += '<h2 style="color:#e63329;">Debug Connection Results</h2>'
+    html += '<h2 style="color:#e63329;">Debug Connection</h2>'
     for section, data in results.items():
         color = '#4ade80' if data.get('status') == 'OK' else '#ff7070'
         html += f'<h3 style="color:{color};margin-top:1.5rem;">{section.upper()} — {data.get("status","")}</h3>'
-        html += '<pre style="background:#1c1c1c;padding:1rem;border-radius:8px;">'
+        html += '<pre style="background:#1c1c1c;padding:1rem;border-radius:8px;white-space:pre-wrap;">'
         for k, v in data.items():
             html += f'{k}: {v}\n'
         html += '</pre>'
     html += '</body></html>'
-
-    from django.http import HttpResponse
     return HttpResponse(html)

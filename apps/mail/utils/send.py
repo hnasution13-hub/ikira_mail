@@ -1,10 +1,6 @@
 from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
-import logging
 import traceback
-
-logger = logging.getLogger(__name__)
-
 
 def send_email_via_smtp(email_obj):
     try:
@@ -12,10 +8,11 @@ def send_email_via_smtp(email_obj):
         cc_list = [cc.strip() for cc in email_obj.cc.split(',')] if email_obj.cc else []
         bcc_list = [bcc.strip() for bcc in email_obj.bcc.split(',')] if email_obj.bcc else []
 
-        # Pakai DEFAULT_FROM_EMAIL bukan sender.email
-        # Gmail SMTP hanya izinkan kirim dari akun yang login
-        from_email = settings.DEFAULT_FROM_EMAIL
+        if not to_list:
+            print(f"[MAIL ERROR] No recipients")
+            return False
 
+        from_email = settings.DEFAULT_FROM_EMAIL
         print(f"[MAIL] Sending {email_obj.id} -> {to_list}")
         print(f"[MAIL] Backend: {settings.EMAIL_BACKEND}")
         print(f"[MAIL] From: {from_email}")

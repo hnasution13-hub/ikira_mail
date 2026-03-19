@@ -12,13 +12,11 @@ class MultipleFileField(forms.FileField):
         super().__init__(*args, **kwargs)
 
     def clean(self, data, initial=None):
-        # Handle None atau list kosong
         if not data:
             return []
-        single_file_clean = super().clean
-        if isinstance(data, (list, tuple)):
-            return [single_file_clean(d, initial) for d in data if d]
-        return [single_file_clean(data, initial)]
+        if not isinstance(data, (list, tuple)):
+            return [data] if data else []
+        return [f for f in data if f]
 
 
 class ComposeEmailForm(forms.Form):
@@ -31,7 +29,10 @@ class ComposeEmailForm(forms.Form):
     attachments = MultipleFileField(required=False)
 
     def clean_recipients(self):
-        return self.cleaned_data['recipients']
+        recipients = self.cleaned_data['recipients']
+        if '@' not in recipients:
+            raise forms.ValidationError("Format email tidak valid")
+        return recipients
 
 
 class ContactForm(forms.ModelForm):

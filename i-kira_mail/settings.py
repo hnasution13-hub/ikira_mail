@@ -42,6 +42,7 @@ LOCAL_APPS = [
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
+    'apps.mail.middleware.VerboseErrorMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -78,7 +79,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'i-kira_mail.wsgi.application'
 
-# Database - Neon PostgreSQL via DATABASE_URL
 import dj_database_url
 DATABASES = {
     'default': dj_database_url.config(
@@ -100,13 +100,11 @@ TIME_ZONE = 'Asia/Jakarta'
 USE_I18N = True
 USE_TZ = True
 
-# Static files
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static'] if (BASE_DIR / 'static').exists() else []
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Cloudinary Storage untuk media/attachments
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME', default=''),
     'API_KEY': config('CLOUDINARY_API_KEY', default=''),
@@ -131,37 +129,27 @@ LOGIN_URL = 'account_login'
 LOGIN_REDIRECT_URL = 'mail:inbox'
 LOGOUT_REDIRECT_URL = 'account_login'
 
-# Django AllAuth settings
 ACCOUNT_LOGIN_METHODS = {'email'}
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_SESSION_REMEMBER = True
 
-# Email Backend - dikontrol penuh via environment variable
-# Set EMAIL_BACKEND di Render:
-#   Gmail SMTP : django.core.mail.backends.smtp.EmailBackend
-#   Mailtrap   : anymail.backends.mailtrap.EmailBackend
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='i-kira Mail <noreply@i-kira.com>')
-
-# SMTP settings (Gmail atau SMTP lain)
 EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 
-# Mailtrap (opsional, hanya jika pakai Mailtrap)
 ANYMAIL = {
     'MAILTRAP_API_TOKEN': config('MAILTRAP_API_TOKEN', default=''),
 }
 
-# IMAP
 IMAP_SERVER = config('IMAP_SERVER', default='imap.gmail.com')
 IMAP_PORT = config('IMAP_PORT', default=993, cast=int)
 
-# Security - production only
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
