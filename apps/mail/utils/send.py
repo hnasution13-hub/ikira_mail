@@ -1,16 +1,21 @@
 import resend
-import base64
 import traceback
 from django.conf import settings
 
 
 def send_email_via_smtp(email_obj, attachment_data=None):
-    """
-    Kirim email via Resend SDK langsung.
-    attachment_data: list of dict {filename, content, content_type}
-    """
     try:
-        resend.api_key = settings.RESEND_API_KEY
+        # Ambil API key dari ANYMAIL dict atau env langsung
+        api_key = settings.ANYMAIL.get('RESEND_API_KEY', '')
+        if not api_key:
+            from decouple import config
+            api_key = config('RESEND_API_KEY', default='')
+
+        if not api_key:
+            print(f"[MAIL ERROR] RESEND_API_KEY tidak ditemukan")
+            return False
+
+        resend.api_key = api_key
 
         to_list = email_obj.get_recipient_list()
         if not to_list:
@@ -37,7 +42,6 @@ def send_email_via_smtp(email_obj, attachment_data=None):
         if email_obj.body_html:
             params["html"] = email_obj.body_html
 
-        # Attachment dari memory
         if attachment_data:
             params["attachments"] = [
                 {
@@ -55,7 +59,7 @@ def send_email_via_smtp(email_obj, attachment_data=None):
         email_obj.sent_at = timezone.now()
         email_obj.save(update_fields=['folder', 'sent_at'])
 
-        print(f"[MAIL] Email {email_obj.id} sent OK via Resend SDK")
+        print(f"[MAIL] Email {email_obj.id} sent OK")
         return True
 
     except Exception as e:
