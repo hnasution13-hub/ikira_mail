@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ email.subject }} - i-karis Mail{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
+        <a href="{% url 'mail:inbox' %}" class="btn btn-sm" style="background-color: #6c757d; color: white;">← Kembali ke Inbox</a>
+        <div>
+            <a href="{% url 'mail:compose' %}?reply_to={{ email.id }}" class="btn btn-sm btn-primary">↩️ Balas</a>
+            <a href="{% url 'mail:compose' %}?forward={{ email.id }}" class="btn btn-sm btn-primary">↪️ Forward</a>
+            <a href="{% url 'mail:delete_email' email.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Hapus email ini?')">🗑️ Hapus</a>
+        </div>
+    </div>
+    
+    <div style="border-bottom: 1px solid #eee; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+        <h2 style="margin-bottom: 1rem;">{{ email.subject }}</h2>
+        
+        <div style="display: flex; gap: 2rem; color: #666;">
+            <div><strong>Dari:</strong> {{ email.sender.email }}</div>
+            <div><strong>Kepada:</strong> {{ email.recipients }}</div>
+            {% if email.cc %}
+            <div><strong>CC:</strong> {{ email.cc }}</div>
+            {% endif %}
+            <div><strong>Tanggal:</strong> {{ email.created_at|date:"d M Y H:i" }}</div>
+        </div>
+    </div>
+    
+    <div style="min-height: 300px; line-height: 1.8; margin-bottom: 2rem;">
+        {{ email.body_text|linebreaks }}
+    </div>
+    
+    {% if email.attachments.exists %}
+    <div style="border-top: 1px solid #eee; padding-top: 1rem;">
+        <h4 style="margin-bottom: 1rem;">📎 Lampiran ({{ email.attachments.count }})</h4>
+        <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+            {% for attachment in email.attachments.all %}
+            <div style="border: 1px solid #ddd; border-radius: 4px; padding: 0.5rem;">
+                <a href="{{ attachment.file.url }}" target="_blank">{{ attachment.filename }}</a>
+                <small style="color: #666; display: block;">{{ attachment.size|filesizeformat }}</small>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

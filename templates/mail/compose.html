@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Tulis Email - i-karis Mail{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2 style="margin-bottom: 1.5rem;">✏️ Tulis Email Baru</h2>
+    
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="id_recipients">Kepada:</label>
+            {{ form.recipients }}
+            {% if contacts %}
+            <datalist id="contacts-list">
+                {% for contact in contacts %}
+                <option value="{{ contact.email }}">
+                {% endfor %}
+            </datalist>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="id_cc">CC:</label>
+            {{ form.cc }}
+        </div>
+        
+        <div class="form-group">
+            <label for="id_bcc">BCC:</label>
+            {{ form.bcc }}
+        </div>
+        
+        <div class="form-group">
+            <label for="id_subject">Subjek:</label>
+            {{ form.subject }}
+        </div>
+        
+        <div class="form-group">
+            <label for="id_body_text">Pesan:</label>
+            {{ form.body_text }}
+        </div>
+        
+        <div class="form-group">
+            <label for="id_attachments">Lampiran:</label>
+            {{ form.attachments }}
+            <small style="color: #666;">Bisa pilih multiple files</small>
+        </div>
+        
+        {{ form.body_html }}
+        
+        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+            <button type="submit" class="btn btn-primary">📤 Kirim Email</button>
+            <a href="{% url 'mail:inbox' %}" class="btn" style="background-color: #6c757d; color: white;">Batal</a>
+        </div>
+    </form>
+</div>
+
+<script>
+// Auto-save draft setiap 30 detik (optional)
+let formChanged = false;
+
+document.querySelectorAll('input, textarea').forEach(input => {
+    input.addEventListener('change', () => formChanged = true);
+});
+
+setInterval(() => {
+    if (formChanged) {
+        // Implement auto-save ke draft
+        console.log('Auto-saving draft...');
+        // formChanged = false;
+    }
+}, 30000);
+</script>
+{% endblock %}

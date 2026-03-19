@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>i-kira Mail - Login Profesional</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 450px;
+            padding: 40px;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .logo-icon span {
+            font-size: 40px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .logo-section h1 {
+            color: #333;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .logo-section p {
+            color: #666;
+            font-size: 14px;
+            font-weight: 400;
+        }
+
+        .login-form {
+            margin-top: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .input-group i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 18px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 15px 15px 15px 45px;
+            border: 2px solid #e1e1e1;
+            border-radius: 12px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.2);
+        }
+
+        .form-control::placeholder {
+            color: #aaa;
+            font-weight: 300;
+        }
+
+        .remember-forgot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .remember {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .remember input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .remember label {
+            color: #666;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .forgot-link {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .forgot-link:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid #fcc;
+        }
+
+        .error-message i {
+            font-size: 18px;
+        }
+
+        .demo-info {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            text-align: center;
+        }
+
+        .demo-info p {
+            color: #888;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+
+        .demo-accounts {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            font-size: 12px;
+            color: #666;
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 10px;
+        }
+
+        .demo-accounts span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .demo-accounts i {
+            color: #667eea;
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 30px 20px;
+            }
+
+            .logo-icon {
+                width: 60px;
+                height: 60px;
+            }
+
+            .logo-icon span {
+                font-size: 30px;
+            }
+
+            .logo-section h1 {
+                font-size: 24px;
+            }
+
+            .demo-accounts {
+                flex-direction: column;
+                gap: 8px;
+            }
+        }
+    </style>
+    <!-- Font Awesome untuk icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo-section">
+            <div class="logo-icon">
+                <span>✉️</span>
+            </div>
+            <h1>i-kira Mail</h1>
+            <p>Email Profesional untuk Perusahaan Anda</p>
+        </div>
+
+        {% if form.errors %}
+        <div class="error-message">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>Email atau password salah. Silakan coba lagi.</span>
+        </div>
+        {% endif %}
+
+        <form method="post" class="login-form">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="id_login">Email Perusahaan</label>
+                <div class="input-group">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" name="login" id="id_login" 
+                           class="form-control" 
+                           placeholder="nama@i-kira.com"
+                           required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="id_password">Password</label>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" name="password" id="id_password" 
+                           class="form-control" 
+                           placeholder="••••••••"
+                           required>
+                </div>
+            </div>
+
+            <div class="remember-forgot">
+                <div class="remember">
+                    <input type="checkbox" name="remember" id="remember">
+                    <label for="remember">Ingat saya</label>
+                </div>
+                <a href="#" class="forgot-link">Lupa password?</a>
+            </div>
+
+            <button type="submit" class="btn-login">
+                <i class="fas fa-sign-in-alt" style="margin-right: 8px;"></i>
+                Masuk ke i-kira Mail
+            </button>
+        </form>
+
+        <div class="demo-info">
+            <p>🔐 Akun Demo (untuk testing)</p>
+            <div class="demo-accounts">
+                <span>
+                    <i class="fas fa-user-tie"></i>
+                    admin@i-kira.com / admin123
+                </span>
+                <span>
+                    <i class="fas fa-user"></i>
+                    staff1@i-kira.com / staff123
+                </span>
+            </div>
+            <p style="margin-top: 15px; font-size: 11px; color: #999;">
+                © 2024 i-kira Mail. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
