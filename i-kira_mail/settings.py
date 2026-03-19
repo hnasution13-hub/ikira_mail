@@ -11,10 +11,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-key-for-dev-only')
 DEBUG = config('DEBUG', default=True, cast=bool)
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.onrender.com', '.i-kira.com']
-CSRF_TRUSTED_ORIGINS = [
-    'https://*.onrender.com',
-    'https://*.i-kira.com',
-]
 
 DJANGO_APPS = [
     'django.contrib.admin',
@@ -149,6 +145,7 @@ EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 
 ANYMAIL = {
     'MAILTRAP_API_TOKEN': config('MAILTRAP_API_TOKEN', default=''),
+    'RESEND_API_KEY': config('RESEND_API_KEY', default=''),
 }
 
 IMAP_SERVER = config('IMAP_SERVER', default='imap.gmail.com')

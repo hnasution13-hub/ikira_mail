@@ -3,7 +3,7 @@ gunicorn
 python-decouple
 whitenoise
 psycopg2-binary
-django-anymail[mailtrap]
+django-anymail[mailtrap,resend]
 django-allauth
 Pillow
 djangorestframework
@@ -11,4 +11,3 @@ django-cors-headers
 dj-database-url
 cloudinary
 django-cloudinary-storage
-django-anymail[resend]
