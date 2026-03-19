@@ -1,0 +1,14 @@
+Django==4.2.16
+gunicorn
+python-decouple
+whitenoise
+psycopg2-binary
+django-anymail[mailtrap]
+django-allauth
+Pillow
+djangorestframework
+django-cors-headers
+dj-database-url
+cloudinary
+django-cloudinary-storage
+django-anymail[resend]
