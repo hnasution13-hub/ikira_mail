@@ -4,32 +4,25 @@
 {% block content %}
 <div style="max-width:720px;margin:0 auto;">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
-    <div>
-      <h1 style="font-family:'Bebas Neue';font-size:1.8rem;letter-spacing:1px;">TULIS EMAIL</h1>
-      <p style="font-size:.82rem;color:var(--muted);margin-top:2px;">Pesan baru</p>
-    </div>
+    <h1 style="font-family:'Bebas Neue';font-size:1.8rem;letter-spacing:1px;">TULIS EMAIL</h1>
     <a href="{% url 'mail:inbox' %}" class="btn btn-ghost btn-sm">← Kembali</a>
   </div>
 
+  {% if messages %}
+  {% for message in messages %}
+  <div style="padding:12px 16px;border-radius:8px;margin-bottom:16px;background:rgba(230,51,41,.1);border:1px solid rgba(230,51,41,.25);color:#ff7070;font-size:.84rem;">
+    {{ message }}
+  </div>
+  {% endfor %}
+  {% endif %}
+
   <div class="card">
-    <form method="post" enctype="multipart/form-data">
+    <form method="post" >
       {% csrf_token %}
 
       <div class="form-group">
         <label class="form-label">Kepada</label>
-        <input type="text" name="recipients" value="{{ form.recipients.value|default:'' }}" placeholder="email@i-kira.com" class="form-input" list="contacts-list" required>
-        {% if contacts %}<datalist id="contacts-list">{% for c in contacts %}<option value="{{ c.email }}">{% endfor %}</datalist>{% endif %}
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div class="form-group">
-          <label class="form-label">CC</label>
-          <input type="text" name="cc" value="{{ form.cc.value|default:'' }}" placeholder="cc@i-kira.com" class="form-input">
-        </div>
-        <div class="form-group">
-          <label class="form-label">BCC</label>
-          <input type="text" name="bcc" value="{{ form.bcc.value|default:'' }}" placeholder="bcc@i-kira.com" class="form-input">
-        </div>
+        <input type="text" name="recipients" value="{{ form.recipients.value|default:'' }}" placeholder="email@domain.com" class="form-input" required>
       </div>
 
       <div class="form-group">
@@ -39,46 +32,20 @@
 
       <div class="form-group">
         <label class="form-label">Pesan</label>
-        <textarea name="body_text" placeholder="Tulis pesan di sini..." class="form-textarea" style="min-height:240px;">{{ form.body_text.value|default:'' }}</textarea>
+        <textarea name="body_text" class="form-textarea" style="min-height:200px;" placeholder="Tulis pesan...">{{ form.body_text.value|default:'' }}</textarea>
       </div>
 
-      <div class="form-group">
-        <label class="form-label">Lampiran</label>
-        <div style="position:relative;">
-          <input type="file" name="attachments" multiple id="fileInput" style="display:none;" onchange="showFiles(this)">
-          <div onclick="document.getElementById('fileInput').click()"
-               style="border:1px dashed var(--border2);border-radius:7px;padding:20px;text-align:center;cursor:pointer;color:var(--muted);font-size:.84rem;transition:border-color .15s;"
-               onmouseover="this.style.borderColor='var(--red)'" onmouseout="this.style.borderColor='var(--border2)'">
-            <div style="font-size:1.4rem;margin-bottom:6px;opacity:.4;">📎</div>
-            Klik untuk pilih file lampiran
-          </div>
-          <div id="fileList" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;"></div>
-        </div>
-      </div>
-
-      <input type="hidden" name="body_html" value="{{ form.body_html.value|default:'' }}">
+      <input type="hidden" name="cc" value="">
+      <input type="hidden" name="bcc" value="">
+      <input type="hidden" name="body_html" value="">
 
       <div style="display:flex;gap:10px;padding-top:8px;border-top:1px solid var(--border);margin-top:8px;">
         <button type="submit" class="btn btn-primary">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          Kirim Email
+          → Kirim Email
         </button>
         <a href="{% url 'mail:inbox' %}" class="btn btn-ghost">Batal</a>
       </div>
     </form>
   </div>
 </div>
-
-<script>
-function showFiles(input) {
-  const list = document.getElementById('fileList');
-  list.innerHTML = '';
-  Array.from(input.files).forEach(f => {
-    const tag = document.createElement('span');
-    tag.style.cssText = 'background:var(--surface);border:1px solid var(--border2);border-radius:5px;padding:4px 10px;font-size:.76rem;color:var(--muted);';
-    tag.textContent = f.name;
-    list.appendChild(tag);
-  });
-}
-</script>
 {% endblock %}
