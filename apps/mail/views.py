@@ -89,6 +89,14 @@ def compose(request):
                         )
 
                 success = send_email_via_smtp(email)
+
+                is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+                if is_ajax:
+                    if success:
+                        return JsonResponse({'status': 'ok', 'redirect': '/'})
+                    else:
+                        return JsonResponse({'status': 'error', 'message': 'Email disimpan tapi gagal dikirim.'})
+
                 if success:
                     messages.success(request, 'Email berhasil dikirim!')
                 else:
@@ -99,6 +107,9 @@ def compose(request):
         except Exception as e:
             print(f"[COMPOSE ERROR] {str(e)}")
             print(traceback.format_exc())
+            is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+            if is_ajax:
+                return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
             messages.error(request, f'Error: {str(e)}')
 
     else:
