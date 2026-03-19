@@ -85,16 +85,25 @@ def compose(request):
                 )
 
                 attachments = form.cleaned_data.get('attachments') or []
+                print(f"[COMPOSE] Attachments from form: {len(attachments)}")
+                # Cek juga FILES langsung sebagai fallback
+                if not attachments:
+                    attachments = request.FILES.getlist('attachments')
+                    print(f"[COMPOSE] Attachments from FILES: {len(attachments)}")
                 for f in attachments:
                     if f and hasattr(f, 'name'):
                         try:
+                            ct = getattr(f, 'content_type', None) or 'application/octet-stream'
+                            sz = getattr(f, 'size', 0) or f.seek(0, 2) or f.tell()
+                            f.seek(0) if hasattr(f, 'seek') else None
                             Attachment.objects.create(
                                 email=email,
                                 file=f,
                                 filename=f.name,
-                                content_type=f.content_type,
-                                size=f.size
+                                content_type=ct,
+                                size=sz
                             )
+                            print(f"[COMPOSE] Attachment saved: {f.name}")
                         except Exception as att_err:
                             print(f"[COMPOSE] Error attachment {f.name}: {att_err}")
 
