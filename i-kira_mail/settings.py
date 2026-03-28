@@ -151,6 +151,8 @@ ANYMAIL = {
 IMAP_SERVER = config('IMAP_SERVER', default='imap.gmail.com')
 IMAP_PORT = config('IMAP_PORT', default=993, cast=int)
 
+CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost').split(',')
+
 if not DEBUG:
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = True
