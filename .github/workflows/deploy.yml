@@ -1,0 +1,50 @@
+name: Deploy Mail ke VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy Mail
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: ENV_FILE_CONTENT
+          script_stop: true
+          script: |
+            set -e
+            APP_DIR="/home/ikira/app"
+            MAIL_DIR="/home/ikira/mail"
+
+            echo "[1/4] Pull latest Mail code..."
+            cd $MAIL_DIR
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "[2/4] Write .env.mail..."
+            printf '%s' "$ENV_FILE_CONTENT" > $APP_DIR/.env.mail
+            chmod 600 $APP_DIR/.env.mail
+
+            echo "[3/4] Build & restart container mail..."
+            cd $APP_DIR
+            docker compose build mail
+            docker compose up -d --no-deps mail
+            docker image prune -f
+
+            echo "[4/4] Run migrations..."
+            docker compose exec mail python manage.py migrate --noinput
+            docker compose exec mail python manage.py collectstatic --noinput --clear
+
+            echo "✅ Mail deploy selesai! $(date '+%H:%M:%S')"
+            docker compose ps
